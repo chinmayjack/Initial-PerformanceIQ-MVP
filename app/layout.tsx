@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AppShell } from "@/components/app-shell";
+import { getSessionContext } from "@/lib/session";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -8,10 +9,20 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const sessionContext = getSessionContext();
+
   return (
     <html lang="en">
       <body>
-        <AppShell>{children}</AppShell>
+        <AppShell
+          session={{
+            userName: sessionContext.userName,
+            userRole: sessionContext.userRole,
+            organizationSlug: sessionContext.organizationSlug
+          }}
+        >
+          {children}
+        </AppShell>
       </body>
     </html>
   );

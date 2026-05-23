@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateAIReviewDraft } from "@/lib/ai-insights";
-import { getMockSession } from "@/lib/auth";
-import { canViewEmployee, getEmployee } from "@/lib/data";
+import { canViewEmployee, getCurrentUser, getEmployee } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -9,13 +8,13 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const employeeId = body.employeeId as string | undefined;
   const cycleName = (body.cycleName as string | undefined) ?? "Year-End Review";
-  const session = getMockSession();
+  const currentUser = await getCurrentUser();
 
   if (!employeeId) {
     return NextResponse.json({ error: "employeeId is required" }, { status: 400 });
   }
 
-  if (!(await canViewEmployee(employeeId, session.user.role, session.user.id))) {
+  if (!(await canViewEmployee(employeeId, currentUser.role, currentUser.id))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

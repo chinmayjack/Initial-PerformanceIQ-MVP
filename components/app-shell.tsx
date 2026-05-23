@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, BrainCircuit, BriefcaseBusiness, Building2, ClipboardList, Home, MessageSquareText, ShieldCheck, Sparkles, Target, Users } from "lucide-react";
-import { defaultSession, defaultSessionUser } from "@/lib/session";
+import { BarChart3, BrainCircuit, BriefcaseBusiness, Building2, ClipboardList, Home, LogOut, MessageSquareText, ShieldCheck, Sparkles, Target, Users } from "lucide-react";
+import { Role } from "@/lib/types";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -17,10 +17,20 @@ const navItems = [
   { href: "/workspace", label: "Workspace", icon: Building2 }
 ];
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  session
+}: {
+  children: React.ReactNode;
+  session: {
+    userName: string;
+    userRole: Role;
+    organizationSlug: string;
+  };
+}) {
   const pathname = usePathname();
 
-  if (pathname === "/") {
+  if (pathname === "/" || pathname === "/login") {
     return <>{children}</>;
   }
 
@@ -43,7 +53,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <ShieldCheck className="h-4 w-4" />
             Live PostgreSQL
           </div>
-          <p className="mt-2 text-sm leading-5 text-slate-300">Workspace: {defaultSession.organizationSlug}. Prisma-backed tenant data with AI-ready insight generation.</p>
+          <p className="mt-2 text-sm leading-5 text-slate-300">Workspace: {session.organizationSlug}. Prisma-backed tenant data with AI-ready insight generation.</p>
         </div>
         <nav className="space-y-1 px-3 py-5">
           {navItems.map((item) => {
@@ -68,8 +78,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-10 border-b border-white/60 bg-white/80 shadow-sm backdrop-blur">
           <div className="flex min-h-16 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div>
-              <div className="text-sm font-semibold text-slate-950">{defaultSessionUser.name}</div>
-              <div className="text-xs text-slate-500">Workspace: {defaultSession.organizationSlug} - {defaultSessionUser.role.replace("_", " ")}</div>
+              <div className="text-sm font-semibold text-slate-950">{session.userName}</div>
+              <div className="text-xs text-slate-500">Workspace: {session.organizationSlug} - {session.userRole.replace("_", " ")}</div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm">
@@ -80,6 +90,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Sparkles className="h-3.5 w-3.5 text-brand-600" />
                 Market-ready MVP
               </div>
+              <Link href="/api/auth/logout" className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm">
+                <LogOut className="h-3.5 w-3.5" />
+                Sign out
+              </Link>
             </div>
             <div className="flex gap-2 overflow-x-auto lg:hidden">
               {navItems.map((item) => (

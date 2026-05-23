@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMockSession } from "@/lib/auth";
-import { canViewEmployee, getEmployee, getVisibleEmployees } from "@/lib/data";
+import { canViewEmployee, getCurrentUser, getEmployee, getVisibleEmployees } from "@/lib/data";
 
 export async function GET(request: NextRequest) {
   const employeeId = request.nextUrl.searchParams.get("employeeId");
-  const session = getMockSession();
-  let employees = await getVisibleEmployees(session.user.role, session.user.id);
+  const currentUser = await getCurrentUser();
+  let employees = await getVisibleEmployees(currentUser.role, currentUser.id);
   if (employeeId) {
-    const employee = (await canViewEmployee(employeeId, session.user.role, session.user.id)) ? await getEmployee(employeeId) : undefined;
+    const employee = (await canViewEmployee(employeeId, currentUser.role, currentUser.id)) ? await getEmployee(employeeId) : undefined;
     employees = employee ? [employee] : [];
   }
   return NextResponse.json({ reviews: employees.flatMap((employee) => employee.reviews) });

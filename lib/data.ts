@@ -1,5 +1,5 @@
 import { prisma } from "./prisma";
-import { defaultSession } from "./session";
+import { getSessionContext } from "./session";
 import { Department, EmployeeProfile, Goal, Organization, Role, User } from "./types";
 
 const employeeInclude = {
@@ -64,26 +64,45 @@ function mapEmployee(profile: any): EmployeeProfile {
 
 export async function getCurrentUser(): Promise<User> {
   const organization = await getCurrentOrganization();
+  const session = getSessionContext();
   const user = await prisma.user.findUnique({
     where: {
       organizationId_email: {
         organizationId: organization.id,
-        email: defaultSession.userEmail
+        email: session.userEmail
       }
     }
   });
   if (!user) {
-    throw new Error(`Seeded session user ${defaultSession.userEmail} was not found in ${organization.slug}.`);
+    throw new Error(`Session user ${session.userEmail} was not found in ${organization.slug}.`);
   }
   return { id: user.id, organizationId: user.organizationId, name: user.name, email: user.email, role: user.role as Role };
 }
 
 export async function getCurrentOrganization(): Promise<Organization> {
-  const organization = await prisma.organization.findUnique({ where: { slug: defaultSession.organizationSlug } });
+  const session = getSessionContext();
+  const organization = await prisma.organization.findUnique({ where: { slug: session.organizationSlug } });
   if (!organization) {
-    throw new Error(`Organization workspace ${defaultSession.organizationSlug} was not found. Run prisma seed after migrating.`);
+    throw new Error(`Organization workspace ${session.organizationSlug} was not found. Run prisma seed after migrating.`);
   }
   return organization;
+}
+
+export async function getLoginOptions() {
+  return prisma.organization.findMany({
+    orderBy: { name: "asc" },
+    include: {
+      users: {
+        orderBy: { name: "asc" },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true
+        }
+      }
+    }
+  });
 }
 
 export async function getDepartments(): Promise<Department[]> {

@@ -1,15 +1,13 @@
-import { Role, User } from "./types";
-import { defaultOrganizationSlug } from "./tenants";
+import { cookies } from "next/headers";
+import { defaultSession, defaultSessionUser, sessionCookieNames } from "./session-config";
+import { Role } from "./types";
 
-export const defaultSessionUser: User = {
-  id: "user-mgr-ava",
-  name: "Ava Patel",
-  email: "ava.patel@performanceiq.local",
-  role: "MANAGER" as Role
-};
-
-export const defaultSession = {
-  organizationSlug: defaultOrganizationSlug,
-  userEmail: defaultSessionUser.email,
-  role: defaultSessionUser.role
-};
+export function getSessionContext() {
+  const cookieStore = cookies();
+  return {
+    organizationSlug: cookieStore.get(sessionCookieNames.organizationSlug)?.value ?? defaultSession.organizationSlug,
+    userEmail: cookieStore.get(sessionCookieNames.userEmail)?.value ?? defaultSession.userEmail,
+    userName: cookieStore.get(sessionCookieNames.userName)?.value ?? defaultSessionUser.name,
+    userRole: (cookieStore.get(sessionCookieNames.userRole)?.value ?? defaultSessionUser.role) as Role
+  };
+}

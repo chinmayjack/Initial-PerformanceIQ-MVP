@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateAIInsight } from "@/lib/ai-insights";
-import { getMockSession } from "@/lib/auth";
-import { canViewEmployee, getEmployee } from "@/lib/data";
+import { canViewEmployee, getCurrentUser, getEmployee } from "@/lib/data";
 
 export async function GET(request: NextRequest) {
   const employeeId = request.nextUrl.searchParams.get("employeeId") ?? "emp-1";
-  const session = getMockSession();
-  if (!(await canViewEmployee(employeeId, session.user.role, session.user.id))) {
+  const currentUser = await getCurrentUser();
+  if (!(await canViewEmployee(employeeId, currentUser.role, currentUser.id))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const employee = await getEmployee(employeeId);

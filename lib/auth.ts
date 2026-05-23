@@ -1,4 +1,4 @@
-import { defaultSessionUser } from "./session";
+import { getSessionContext } from "./session";
 import { Role, User } from "./types";
 
 export type Session = {
@@ -7,6 +7,12 @@ export type Session = {
 };
 
 export function getMockSession(role?: Role): Session {
-  const user = role ? { ...defaultSessionUser, role } : defaultSessionUser;
+  const session = getSessionContext();
+  const user = {
+    id: session.userEmail,
+    name: session.userName,
+    email: session.userEmail,
+    role: role ?? session.userRole
+  };
   return { user };
 }
