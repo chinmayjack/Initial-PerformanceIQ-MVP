@@ -1,5 +1,6 @@
 import { getEmployees } from "@/lib/data";
 import { ReviewGenerator } from "@/components/review-generator";
+import { ReviewCommentManager } from "@/components/review-comment-manager";
 import { PageHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +12,7 @@ export default async function ReviewsPage() {
     <div>
       <PageHeader title="Review Cycles" description="Mid-year and year-end reviews with manager, self, and calibration ratings plus development plans." />
       <ReviewGenerator employees={employees.map((employee) => ({ id: employee.id, name: employee.user.name, title: employee.title }))} />
+      <ReviewCommentManager employees={employees} />
       <div className="metric-card overflow-x-auto">
         <table className="data-table">
           <thead>

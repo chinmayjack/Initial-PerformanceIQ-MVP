@@ -6,7 +6,7 @@ import { getSessionContext } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage({ searchParams }: { searchParams?: { error?: string } }) {
+export default async function LoginPage({ searchParams }: { searchParams?: { error?: string; next?: string } }) {
   const session = getSessionContext();
   const organizations = (await getLoginOptions()).filter((organization) => organization.users.length > 0);
   const activeOrganization = organizations.find((organization) => organization.slug === session.organizationSlug) ?? organizations[0];
@@ -49,6 +49,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: { err
             ) : null}
 
             <form className="mt-6 space-y-4" action="/api/auth/login" method="post">
+              <input type="hidden" name="next" value={searchParams?.next ?? "/dashboard"} />
               <label className="block">
                 <span className="text-sm font-semibold text-slate-700">Workspace</span>
                 <select className="mt-2 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm" name="organizationSlug" defaultValue={activeOrganization.slug}>

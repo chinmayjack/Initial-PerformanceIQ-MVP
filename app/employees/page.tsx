@@ -1,4 +1,5 @@
 import { getDepartments, getEmployees } from "@/lib/data";
+import { EmployeeManager } from "@/components/employee-manager";
 import { PageHeader, ProgressBar } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +12,7 @@ export default async function EmployeesPage() {
   return (
     <div>
       <PageHeader title="Employee Profiles" description="Complete talent profiles with role, department, manager, skills, career aspirations, and performance signals." />
+      <EmployeeManager departments={departments} managers={employees.filter((employee) => employee.user.role === "MANAGER")} />
       <div className="metric-card overflow-x-auto">
         <table className="data-table">
           <thead>

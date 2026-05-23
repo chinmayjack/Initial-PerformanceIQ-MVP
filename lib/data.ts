@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 import { getSessionContext } from "./session";
-import { Department, EmployeeProfile, Goal, Organization, Role, User } from "./types";
+import { Department, EmployeeProfile, Feedback, Goal, ReviewCycle, Role, Sentiment, Organization, User } from "./types";
 
 const employeeInclude = {
   user: true,
@@ -213,4 +213,178 @@ export async function createGoal(input: Partial<Goal>) {
       completed: milestone.completed
     }))
   };
+}
+
+export async function createEmployee(input: {
+  name: string;
+  email: string;
+  title: string;
+  departmentId: string;
+  managerId?: string;
+  currentLevel: string;
+  careerAspirations: string;
+  joiningDate: string;
+}) {
+  const currentUser = await getCurrentUser();
+  if (currentUser.role !== "HR_ADMIN" && currentUser.role !== "MANAGER") {
+    throw new Error("Only HR admins and managers can add employees.");
+  }
+
+  const organization = await getCurrentOrganization();
+  const department = await prisma.department.findFirst({
+    where: {
+      id: input.departmentId,
+      organizationId: organization.id
+    }
+  });
+  if (!department) {
+    throw new Error("Department is not in the active workspace.");
+  }
+
+  if (input.managerId) {
+    const manager = await prisma.employeeProfile.findFirst({
+      where: {
+        id: input.managerId,
+        organizationId: organization.id
+      }
+    });
+    if (!manager) {
+      throw new Error("Manager is not in the active workspace.");
+    }
+  }
+
+  const user = await prisma.user.create({
+    data: {
+      organizationId: organization.id,
+      name: input.name,
+      email: input.email,
+      role: "EMPLOYEE" as Role
+    }
+  });
+
+  const created = await prisma.employeeProfile.create({
+    data: {
+      organizationId: organization.id,
+      userId: user.id,
+      departmentId: input.departmentId,
+      managerId: input.managerId || undefined,
+      title: input.title,
+      joiningDate: new Date(input.joiningDate),
+      currentLevel: input.currentLevel,
+      careerAspirations: input.careerAspirations,
+      performanceScore: 70,
+      engagementScore: 70,
+      promotionReadinessScore: 45,
+      skills: {
+        create: [
+          { name: "Onboarding", category: "Foundational", proficiency: 50 },
+          { name: "Execution rigor", category: "Functional", proficiency: 55 }
+        ]
+      },
+      goals: {
+        create: [
+          {
+            title: "Complete onboarding impact plan",
+            description: "Build context, define role outcomes, and align with manager on first-quarter priorities.",
+            year: new Date().getFullYear(),
+            progress: 0,
+            priority: "HIGH",
+            status: "NOT_STARTED",
+            companyObjective: department.objective,
+            milestones: {
+              create: [
+                {
+                  title: "Complete role onboarding checklist",
+                  dueDate: new Date(new Date().setDate(new Date().getDate() + 30)),
+                  completed: false
+                }
+              ]
+            }
+          }
+        ]
+      },
+      careerPath: {
+        create: {
+          currentRole: input.title,
+          nextRole: input.careerAspirations,
+          requiredSkills: ["Role mastery", "Stakeholder communication", "Business impact"],
+          missingSkills: ["Role mastery", "Business impact"],
+          recommendedTraining: ["PerformanceIQ onboarding path", "Manager alignment workshop"],
+          readinessTimeline: "6-12 months"
+        }
+      }
+    },
+    include: employeeInclude
+  });
+
+  return mapEmployee(created);
+}
+
+export async function createFeedback(input: {
+  receiverId: string;
+  type?: Feedback["type"];
+  sentiment?: Sentiment;
+  body: string;
+}) {
+  const currentUser = await getCurrentUser();
+  if (!(await canViewEmployee(input.receiverId, currentUser.role, currentUser.id))) {
+    throw new Error("Cannot add feedback outside your visible employees.");
+  }
+
+  const authorProfile = await prisma.employeeProfile.findUnique({
+    where: { userId: currentUser.id }
+  });
+
+  const feedback = await prisma.feedback.create({
+    data: {
+      receiverId: input.receiverId,
+      authorId: authorProfile?.id,
+      type: input.type ?? "MANAGER",
+      sentiment: input.sentiment ?? "NEUTRAL",
+      body: input.body
+    }
+  });
+
+  return {
+    id: feedback.id,
+    receiverId: feedback.receiverId,
+    authorId: feedback.authorId ?? undefined,
+    type: feedback.type,
+    sentiment: feedback.sentiment,
+    body: feedback.body,
+    createdAt: dateOnly(feedback.createdAt)
+  };
+}
+
+export async function createReview(input: {
+  employeeId: string;
+  cycleName: string;
+  period: string;
+  managerRating: number;
+  selfRating?: number;
+  finalCalibrationRating?: number;
+  strengths: string;
+  improvementAreas: string;
+  developmentPlan: string;
+}) {
+  const currentUser = await getCurrentUser();
+  if (!(await canViewEmployee(input.employeeId, currentUser.role, currentUser.id))) {
+    throw new Error("Cannot add a review outside your visible employees.");
+  }
+
+  const review = await prisma.reviewCycle.create({
+    data: {
+      employeeId: input.employeeId,
+      cycleName: input.cycleName,
+      period: input.period,
+      managerRating: input.managerRating,
+      selfRating: input.selfRating ?? input.managerRating,
+      finalCalibrationRating: input.finalCalibrationRating ?? input.managerRating,
+      strengths: input.strengths,
+      improvementAreas: input.improvementAreas,
+      developmentPlan: input.developmentPlan
+    }
+  });
+
+  return review as ReviewCycle;
 }

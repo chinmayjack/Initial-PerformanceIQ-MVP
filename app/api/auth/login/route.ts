@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const organizationSlug = String(formData.get("organizationSlug") ?? "");
   const userEmail = String(formData.get("userEmail") ?? "");
+  const nextPath = String(formData.get("next") ?? "/dashboard");
 
   const organization = await prisma.organization.findUnique({
     where: { slug: organizationSlug },
@@ -30,7 +31,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=invalid-session", request.url), { status: 303 });
   }
 
-  const response = NextResponse.redirect(new URL("/dashboard", request.url), { status: 303 });
+  const safeNextPath = nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "/dashboard";
+  const response = NextResponse.redirect(new URL(safeNextPath, request.url), { status: 303 });
   response.cookies.set(sessionCookieNames.organizationSlug, organization.slug, cookieOptions);
   response.cookies.set(sessionCookieNames.userEmail, user.email, cookieOptions);
   response.cookies.set(sessionCookieNames.userName, user.name, cookieOptions);
