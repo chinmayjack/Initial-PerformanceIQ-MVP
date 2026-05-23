@@ -34,6 +34,22 @@ npm run prisma:seed
 npx vercel --prod
 ```
 
+## If Vercel Build Fails After `npm install`
+
+Make sure all environment variables are added for **Production**:
+
+```env
+DATABASE_URL=postgresql://postgres.owplfnvqevwwtgbghgyb:YOUR_DATABASE_PASSWORD@aws-1-us-west-2.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1
+DIRECT_URL=postgresql://postgres.owplfnvqevwwtgbghgyb:YOUR_DATABASE_PASSWORD@aws-1-us-west-2.pooler.supabase.com:5432/postgres
+OPENAI_API_KEY=
+OPENAI_REVIEW_MODEL=gpt-4o-mini
+NEXT_PUBLIC_APP_URL=https://YOUR_VERCEL_APP_NAME.vercel.app
+```
+
+Then redeploy with **Redeploy without build cache**.
+
+The project explicitly runs `prisma generate` during install and build so Vercel has a fresh Prisma Client.
+
 ## Production Checklist
 
 - Add a real auth provider before customer data is used.
