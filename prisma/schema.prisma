@@ -1,0 +1,195 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  EMPLOYEE
+  MANAGER
+  HR_ADMIN
+  EXECUTIVE
+}
+
+enum GoalStatus {
+  NOT_STARTED
+  ON_TRACK
+  AT_RISK
+  COMPLETED
+}
+
+enum GoalPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum FeedbackType {
+  MANAGER
+  PEER
+  SELF_REVIEW
+  REVIEW_360
+}
+
+enum Sentiment {
+  POSITIVE
+  NEUTRAL
+  IMPROVEMENT_NEEDED
+}
+
+model User {
+  id        String          @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name      String
+  email     String
+  role      Role
+  profile   EmployeeProfile?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([organizationId, email])
+}
+
+model Organization {
+  id          String            @id @default(cuid())
+  name        String
+  slug        String            @unique
+  plan        String            @default("Pilot")
+  industry    String
+  seats       Int               @default(25)
+  users       User[]
+  departments Department[]
+  employees   EmployeeProfile[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model Department {
+  id        String            @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name      String
+  objective String
+  employees EmployeeProfile[]
+
+  @@unique([organizationId, name])
+}
+
+model EmployeeProfile {
+  id                      String        @id @default(cuid())
+  organizationId          String
+  organization            Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId                  String        @unique
+  user                    User          @relation(fields: [userId], references: [id])
+  departmentId            String
+  department              Department    @relation(fields: [departmentId], references: [id])
+  managerId               String?
+  manager                 EmployeeProfile? @relation("ManagerReports", fields: [managerId], references: [id])
+  directReports           EmployeeProfile[] @relation("ManagerReports")
+  title                   String
+  joiningDate             DateTime
+  currentLevel            String
+  careerAspirations       String
+  performanceScore        Int
+  engagementScore         Int
+  promotionReadinessScore Int
+  skills                  Skill[]
+  goals                   Goal[]
+  feedbackReceived        Feedback[]    @relation("FeedbackReceiver")
+  feedbackAuthored        Feedback[]    @relation("FeedbackAuthor")
+  reviewCycles            ReviewCycle[]
+  careerPath              CareerPath?
+  aiInsights              AIInsight[]
+}
+
+model Skill {
+  id         String            @id @default(cuid())
+  name       String
+  category   String
+  proficiency Int
+  employeeId String
+  employee   EmployeeProfile   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model Goal {
+  id                String       @id @default(cuid())
+  employeeId        String
+  employee          EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  title             String
+  description       String
+  year              Int
+  progress          Int
+  priority          GoalPriority
+  status            GoalStatus
+  companyObjective  String
+  milestones        Milestone[]
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
+model Milestone {
+  id          String   @id @default(cuid())
+  goalId      String
+  goal        Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  title       String
+  dueDate     DateTime
+  completed   Boolean  @default(false)
+}
+
+model Feedback {
+  id          String          @id @default(cuid())
+  receiverId  String
+  receiver    EmployeeProfile @relation("FeedbackReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  authorId    String?
+  author      EmployeeProfile? @relation("FeedbackAuthor", fields: [authorId], references: [id])
+  type        FeedbackType
+  sentiment   Sentiment
+  body        String
+  createdAt   DateTime        @default(now())
+}
+
+model ReviewCycle {
+  id                     String          @id @default(cuid())
+  employeeId             String
+  employee               EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  cycleName              String
+  period                 String
+  managerRating          Int
+  selfRating             Int
+  finalCalibrationRating Int
+  strengths              String
+  improvementAreas       String
+  developmentPlan        String
+  createdAt              DateTime        @default(now())
+}
+
+model CareerPath {
+  id                  String          @id @default(cuid())
+  employeeId          String          @unique
+  employee            EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  currentRole         String
+  nextRole            String
+  requiredSkills      String[]
+  missingSkills       String[]
+  recommendedTraining String[]
+  readinessTimeline   String
+}
+
+model AIInsight {
+  id                  String          @id @default(cuid())
+  employeeId          String
+  employee            EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  riskLevel           String
+  goalPrediction      String
+  promotionSummary    String
+  careerSummary       String
+  learningAreas       String[]
+  coachingSuggestions String[]
+  executiveSummary    String
+  generatedAt         DateTime        @default(now())
+}
