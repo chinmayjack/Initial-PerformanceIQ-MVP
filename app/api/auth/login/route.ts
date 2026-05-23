@@ -27,10 +27,10 @@ export async function POST(request: NextRequest) {
 
   const user = organization?.users[0];
   if (!organization || !user) {
-    return NextResponse.redirect(new URL("/login?error=invalid-session", request.url));
+    return NextResponse.redirect(new URL("/login?error=invalid-session", request.url), { status: 303 });
   }
 
-  const response = NextResponse.redirect(new URL("/dashboard", request.url));
+  const response = NextResponse.redirect(new URL("/dashboard", request.url), { status: 303 });
   response.cookies.set(sessionCookieNames.organizationSlug, organization.slug, cookieOptions);
   response.cookies.set(sessionCookieNames.userEmail, user.email, cookieOptions);
   response.cookies.set(sessionCookieNames.userName, user.name, cookieOptions);
